@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Vòng Quay May Mắn</title>
-    <!-- Thư viện hiệu ứng pháo giấy và thông báo -->
+    
+    <!-- Thư viện hiệu ứng -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --primary-color: #ff4757;
-            --secondary-color: #2f3542;
-            --accent-color: #f1c40f;
-            --bg-gradient: linear-gradient(135deg, #1e3799, #000000);
+            --bg-dark: #0f0c29;
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --gold: #f1c40f;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Montserrat', sans-serif;
@@ -32,125 +32,143 @@
             color: white;
         }
 
-        .container {
-            position: relative;
-            width: 90vmin;
-            height: 90vmin;
-            max-width: 500px;
-            max-height: 500px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Hiệu ứng ánh sáng nền */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 300px; height: 300px;
+            background: rgba(255, 71, 87, 0.2);
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
         }
 
-        /* Kim chỉ */
+        .status-bar {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+            font-size: 14px;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 92vmin;
+            height: 92vmin;
+            max-width: 450px;
+            max-height: 450px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Kim chỉ cố định */
         .pointer {
             position: absolute;
-            top: -10px;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
-            width: 40px;
-            height: 50px;
-            background: var(--accent-color);
+            width: 45px;
+            height: 55px;
+            background: var(--gold);
             clip-path: polygon(50% 100%, 0 0, 100% 0);
-            z-index: 20;
-            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.5));
-            border-bottom: 3px solid white;
+            z-index: 30;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+            border-bottom: 4px solid white;
         }
 
         #wheel-canvas {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            border: 10px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5), 0 0 10px var(--accent-color);
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+            border: 8px solid #fff;
+            transition: transform 6s cubic-bezier(0.2, 0, 0.2, 1);
+            box-shadow: 0 0 20px var(--gold);
         }
 
-        /* Controls */
         .controls {
             margin-top: 30px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-align: center;
         }
 
         #btn-spin {
-            background: linear-gradient(to right, #ff4757, #ff6b81);
+            padding: 18px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 22px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
             color: white;
-            padding: 15px 40px;
-            font-size: 20px;
+            box-shadow: 0 10px 25px rgba(255, 71, 87, 0.4);
+            transition: all 0.3s;
+            letter-spacing: 1px;
         }
 
-        #btn-spin:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            backdrop-filter: blur(5px);
+        #btn-spin:active { transform: scale(0.92); }
+        #btn-spin:disabled { 
+            background: #555; 
+            box-shadow: none; 
+            cursor: not-allowed; 
+            opacity: 0.7;
         }
 
-        button:active { transform: scale(0.95); }
-
-        /* Animation khi thắng */
+        /* Rung lắc khi dừng */
+        .vibrate { animation: vibrate 0.1s linear 8; }
         @keyframes vibrate {
             0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
+            25% { transform: translate(-3px, 3px); }
+            50% { transform: translate(3px, -3px); }
+            75% { transform: translate(-3px, -3px); }
             100% { transform: translate(0); }
         }
 
-        .vibrate { animation: vibrate 0.1s linear 5; }
-
-        /* Fullscreen cho điện thoại */
-        :fullscreen body { background: black; }
+        .copyright {
+            position: absolute;
+            bottom: 10px;
+            font-size: 10px;
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container" id="main-container">
+    <div class="status-bar" id="turn-display">Lượt chơi hôm nay: 4/4</div>
+
+    <div class="wheel-container" id="main-container">
         <div class="pointer"></div>
-        <canvas id="wheel-canvas" width="500" height="500"></canvas>
+        <canvas id="wheel-canvas" width="600" height="600"></canvas>
     </div>
 
     <div class="controls">
-        <button id="btn-spin" onclick="spinWheel()">Quay ngay</button>
-        <button class="btn-secondary" onclick="resetWheel()">Chơi lại</button>
-        <button class="btn-secondary" onclick="toggleFullscreen()">Toàn màn hình</button>
+        <button id="btn-spin" onclick="spinWheel()">QUAY NGAY</button>
     </div>
 
-    <!-- Âm thanh (Sử dụng link online hoặc bạn có thể nhúng base64) -->
+    <div class="copyright">Lucky Spin v2.0</div>
+
+    <!-- Âm thanh -->
     <audio id="sound-tick" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
     <audio id="sound-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
 
     <script>
-        // ================= CẤU HÌNH VÒNG QUAY =================
+        // ================= CẤU HÌNH DỮ LIỆU =================
         const prizes = [
-            { text: "Heo miếng nướng", color: "#e74c3c", probability: 15 },
-            { text: "Kẹo dâu yumyum", color: "#9b59b6", probability: 20 },
-            { text: "May mắn lần sau", color: "#95a5a6", probability: 25 },
-            { text: "Chà bông heo", color: "#f1c40f", probability: 25 },
-            { text: "Nón bảo hiểm", color: "#2ecc71", probability: 15 }
+            { text: "một heo miếng nướng", color: "#FF5E5E", probability: 20 },
+            { text: "một kẹo dâu yumyum", color: "#FF9F43", probability: 20 },
+            { text: "chúc bạn may mắn lần sau", color: "#54a0ff", probability: 25 },
+            { text: "một thìa chà bông heo ủn ỉn", color: "#5f27cd", probability: 25 },
+            { text: "kẹo dâu và thêm 1 lượt", color: "#1dd1a1", probability: 10 }
         ];
 
+        const MAX_TURNS = 4;
         const canvas = document.getElementById('wheel-canvas');
         const ctx = canvas.getContext('2d');
         const btnSpin = document.getElementById('btn-spin');
+        const turnDisplay = document.getElementById('turn-display');
         const soundTick = document.getElementById('sound-tick');
         const soundWin = document.getElementById('sound-win');
 
@@ -158,7 +176,29 @@
         let isSpinning = false;
         const segmentAngle = 360 / prizes.length;
 
-        // Vẽ vòng quay ban đầu
+        // ================= QUẢN LÝ LƯỢT CHƠI =================
+        function getTurnInfo() {
+            const today = new Date().toDateString();
+            let data = JSON.parse(localStorage.getItem('spin_data'));
+            
+            if (!data || data.date !== today) {
+                data = { date: today, count: 0 };
+                localStorage.setItem('spin_data', JSON.stringify(data));
+            }
+            return data;
+        }
+
+        function updateTurnDisplay() {
+            const data = getTurnInfo();
+            const remains = MAX_TURNS - data.count;
+            turnDisplay.innerText = `Lượt chơi hôm nay: ${remains}/${MAX_TURNS}`;
+            if (remains <= 0) {
+                btnSpin.disabled = true;
+                btnSpin.innerText = "HẾT LƯỢT";
+            }
+        }
+
+        // ================= VẼ VÒNG QUAY =================
         function drawWheel() {
             const radius = canvas.width / 2;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -167,131 +207,133 @@
                 const angle = (i * segmentAngle) * Math.PI / 180;
                 const nextAngle = ((i + 1) * segmentAngle) * Math.PI / 180;
 
-                // Vẽ ô màu
+                // Vẽ ô
                 ctx.beginPath();
                 ctx.moveTo(radius, radius);
                 ctx.arc(radius, radius, radius - 10, angle, nextAngle);
                 ctx.fillStyle = prize.color;
                 ctx.fill();
-                ctx.strokeStyle = "white";
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Vẽ chữ
+                // Vẽ chữ (Text xoay hướng vào tâm)
                 ctx.save();
                 ctx.translate(radius, radius);
                 ctx.rotate(angle + (segmentAngle * Math.PI / 180) / 2);
                 ctx.textAlign = "right";
                 ctx.fillStyle = "white";
-                ctx.font = "bold 18px Montserrat";
-                ctx.fillText(prize.text, radius - 40, 10);
+                ctx.font = "bold 24px Montserrat";
+                // Ngắt dòng nếu text dài
+                const words = prize.text.split(' ');
+                if(words.length > 3) {
+                    ctx.fillText(words.slice(0,3).join(' '), radius - 40, -10);
+                    ctx.fillText(words.slice(3).join(' '), radius - 40, 20);
+                } else {
+                    ctx.fillText(prize.text, radius - 40, 10);
+                }
                 ctx.restore();
             });
         }
 
-        // Tính toán ô trúng thưởng dựa trên xác suất
+        // ================= LOGIC QUAY =================
         function getRandomPrizeIndex() {
             const rand = Math.random() * 100;
-            let cumulativeProbability = 0;
+            let cumulative = 0;
             for (let i = 0; i < prizes.length; i++) {
-                cumulativeProbability += prizes[i].probability;
-                if (rand <= cumulativeProbability) return i;
+                cumulative += prizes[i].probability;
+                if (rand <= cumulative) return i;
             }
             return 0;
         }
 
         function spinWheel() {
-            if (isSpinning) return;
+            const data = getTurnInfo();
+            if (data.count >= MAX_TURNS || isSpinning) {
+                Swal.fire("Thông báo", "Bạn đã sử dụng hết lượt quay hôm nay!", "info");
+                return;
+            }
 
             isSpinning = true;
             btnSpin.disabled = true;
 
             const prizeIndex = getRandomPrizeIndex();
+            const extraRounds = Math.floor(Math.random() * 4) + 6; // 6-10 vòng
             
-            // Tính toán góc xoay
-            // 360 * (5-8 vòng) + góc của ô đó
-            // Lưu ý: Kim chỉ ở phía trên (270 độ), nên ta cần trừ đi để kết quả chính xác
-            const extraRounds = Math.floor(Math.random() * 4) + 5; 
+            // Tính góc: Kim chỉ ở đỉnh (270 độ). 
+            // Cần tính sao cho ô trúng thưởng dừng ở vị trí 270 độ
             const stopAngle = (360 - (prizeIndex * segmentAngle)) - (segmentAngle / 2);
             const totalRotation = (extraRounds * 360) + stopAngle;
 
             currentRotation += totalRotation;
             canvas.style.transform = `rotate(${currentRotation}deg)`;
 
-            // Hiệu ứng âm thanh khi quay qua từng ô
+            // Âm thanh tạch tạch
             let lastSegment = -1;
-            const checkSound = setInterval(() => {
+            const soundInterval = setInterval(() => {
                 const style = window.getComputedStyle(canvas);
                 const matrix = new WebKitCSSMatrix(style.transform);
-                const currentAngle = Math.round(Math.atan2(matrix.b, matrix.a) * (180 / Math.PI));
-                const normalizedAngle = (currentAngle < 0 ? currentAngle + 360 : currentAngle);
-                const currentSeg = Math.floor((360 - normalizedAngle) / segmentAngle) % prizes.length;
+                const angle = Math.round(Math.atan2(matrix.b, matrix.a) * (180 / Math.PI));
+                const normAngle = (angle < 0 ? angle + 360 : angle);
+                const curSeg = Math.floor((360 - normAngle) / segmentAngle) % prizes.length;
                 
-                if (currentSeg !== lastSegment) {
+                if (curSeg !== lastSegment) {
                     soundTick.currentTime = 0;
-                    soundTick.play().catch(() => {});
-                    lastSegment = currentSeg;
+                    soundTick.play().catch(()=>{});
+                    lastSegment = curSeg;
                 }
-            }, 50);
+            }, 60);
 
-            // Xử lý khi dừng quay
             setTimeout(() => {
-                clearInterval(checkSound);
-                isSpinning = false;
-                btnSpin.disabled = false;
+                clearInterval(soundInterval);
+                finishSpin(prizeIndex);
+            }, 6000);
+        }
+
+        function finishSpin(index) {
+            isSpinning = false;
+            const prize = prizes[index];
+            
+            // Cập nhật lượt chơi vào LocalStorage
+            let data = getTurnInfo();
+            // Nếu trúng ô "thêm 1 lượt" thì không tăng count (hoặc trừ đi 1)
+            if (prize.text.includes("thêm 1 lượt")) {
+                // Không tăng count -> giữ nguyên lượt
+            } else {
+                data.count++;
+            }
+            localStorage.setItem('spin_data', JSON.stringify(data));
+            updateTurnDisplay();
+
+            // Hiệu ứng rung và pháo giấy
+            document.getElementById('main-container').classList.add('vibrate');
+            soundWin.play();
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 } });
+
+            setTimeout(() => {
+                document.getElementById('main-container').classList.remove('vibrate');
                 
-                // Rung nhẹ
-                document.getElementById('main-container').classList.add('vibrate');
-                setTimeout(() => document.getElementById('main-container').classList.remove('vibrate'), 500);
-
-                // Âm thanh thắng
-                soundWin.play();
-
-                // Pháo giấy
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
-
-                // Hiển thị kết quả
                 Swal.fire({
                     title: '🎉 CHÚC MỪNG!',
-                    html: `Bạn đã nhận được:<br><b style="color:var(--primary-color); font-size: 1.5em;">${prizes[prizeIndex].text}</b>`,
-                    confirmButtonText: 'Tuyệt vời!',
+                    html: `Bạn đã nhận được:<br><b style="color:#ff4757; font-size: 1.3em;">${prize.text}</b>`,
+                    confirmButtonText: 'Đóng',
                     confirmButtonColor: '#ff4757',
                     background: '#fff',
-                    customClass: {
-                        title: 'swal-title',
-                        popup: 'swal-popup'
+                    allowOutsideClick: false
+                }).then(() => {
+                    if (data.count >= MAX_TURNS) {
+                        btnSpin.disabled = true;
+                        btnSpin.innerText = "HẾT LƯỢT";
+                    } else {
+                        btnSpin.disabled = false;
                     }
                 });
-
-                if (navigator.vibrate) navigator.vibrate(200);
-
-            }, 5000); // Khớp với thời gian transition CSS
-        }
-
-        function resetWheel() {
-            if (isSpinning) return;
-            currentRotation = 0;
-            canvas.style.transition = 'none';
-            canvas.style.transform = `rotate(0deg)`;
-            setTimeout(() => {
-                canvas.style.transition = 'transform 5s cubic-bezier(0.15, 0, 0.15, 1)';
-            }, 50);
-        }
-
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
+            }, 500);
         }
 
         // Khởi tạo
         drawWheel();
+        updateTurnDisplay();
     </script>
 </body>
 </html>
